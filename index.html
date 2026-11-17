@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student Attendance Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f5f7fb; --card:#fff; --ink:#1b2333; --muted:#6b7488; --line:#e3e7ef;
+    --brand:#3b5bdb; --brand-soft:#e7ecff; --ok:#2f9e44; --ok-soft:#e6f6ea;
+    --bad:#e03131; --bad-soft:#fdeaea; --late:#e8890c; --late-soft:#fff3e0;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--ink)}
+  header{background:var(--brand);color:#fff;padding:18px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+  header h1{margin:0;font-size:20px;font-weight:700}
+  header p{margin:2px 0 0;opacity:.85;font-size:13px}
+  nav{display:flex;gap:6px}
+  nav button{background:rgba(255,255,255,.15);color:#fff;border:0;padding:8px 14px;border-radius:8px;font:inherit;font-size:14px;cursor:pointer}
+  nav button.active{background:#fff;color:var(--brand);font-weight:600}
+  main{max-width:1100px;margin:0 auto;padding:24px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px;margin-bottom:20px}
+  .card h2{margin:0 0 14px;font-size:16px}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:end}
+  label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-weight:500}
+  input,select{font:inherit;font-size:14px;padding:9px 11px;border:1px solid var(--line);border-radius:8px;background:#fff;min-width:150px}
+  input:focus,select:focus{outline:2px solid var(--brand-soft);border-color:var(--brand)}
+  .btn{font:inherit;font-size:14px;padding:9px 16px;border-radius:8px;border:1px solid var(--line);background:#fff;cursor:pointer;font-weight:500}
+  .btn.primary{background:var(--brand);color:#fff;border-color:var(--brand)}
+  .btn.small{padding:5px 10px;font-size:13px}
+  .btn:hover{filter:brightness(.96)}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:20px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+  .stat .k{font-size:12px;color:var(--muted);font-weight:500}
+  .stat .v{font-size:26px;font-weight:700;margin-top:4px}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line)}
+  th{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .seg button{border:0;background:#fff;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer;color:var(--muted)}
+  .seg button+button{border-left:1px solid var(--line)}
+  .seg button.on.P{background:var(--ok-soft);color:var(--ok);font-weight:600}
+  .seg button.on.A{background:var(--bad-soft);color:var(--bad);font-weight:600}
+  .seg button.on.L{background:var(--late-soft);color:var(--late);font-weight:600}
+  .pill{display:inline-block;padding:3px 9px;border-radius:999px;font-size:12px;font-weight:600}
+  .pill.good{background:var(--ok-soft);color:var(--ok)}
+  .pill.warn{background:var(--late-soft);color:var(--late)}
+  .pill.bad{background:var(--bad-soft);color:var(--bad)}
+  .bar{height:6px;background:var(--line);border-radius:4px;overflow:hidden;width:100px;display:inline-block;vertical-align:middle;margin-right:8px}
+  .bar i{display:block;height:100%;background:var(--ok)}
+  .muted{color:var(--muted);font-size:13px}
+  .empty{text-align:center;padding:30px;color:var(--muted)}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:8px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none}
+  .toast.show{opacity:1}
+  textarea{width:100%;height:140px;font-family:monospace;font-size:12px;border:1px solid var(--line);border-radius:8px;padding:10px}
+  .hidden{display:none}
+  @media (max-width:640px){main{padding:14px} th:nth-child(2),td:nth-child(2){display:none}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>🎓 Student Attendance Portal</h1>
+    <p id="today"></p>
+  </div>
+  <nav>
+    <button data-view="mark" class="active">Mark Attendance</button>
+    <button data-view="students">Students</button>
+    <button data-view="reports">Reports</button>
+  </nav>
+</header>
+
+<main>
+  <!-- MARK ATTENDANCE -->
+  <section id="view-mark">
+    <div class="stats">
+      <div class="stat"><div class="k">Total Students</div><div class="v" id="sTotal">0</div></div>
+      <div class="stat"><div class="k">Present</div><div class="v" style="color:var(--ok)" id="sP">0</div></div>
+      <div class="stat"><div class="k">Absent</div><div class="v" style="color:var(--bad)" id="sA">0</div></div>
+      <div class="stat"><div class="k">Late</div><div class="v" style="color:var(--late)" id="sL">0</div></div>
+    </div>
+    <div class="card">
+      <div class="row" style="justify-content:space-between;margin-bottom:14px">
+        <div class="row">
+          <div><label>Date</label><input type="date" id="date"></div>
+          <div><label>Class</label><select id="classFilter"></select></div>
+          <div><label>Search</label><input id="search" placeholder="Name or roll no."></div>
+        </div>
+        <div class="row">
+          <button class="btn" id="allP">Mark all present</button>
+          <button class="btn primary" id="save">Save</button>
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>Roll No.</th><th>Class</th><th>Name</th><th>Status</th></tr></thead>
+        <tbody id="markBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- STUDENTS -->
+  <section id="view-students" class="hidden">
+    <div class="card">
+      <h2>Add Student</h2>
+      <form id="addForm" class="row">
+        <div><label>Roll No.</label><input id="fRoll" required placeholder="e.g. 101"></div>
+        <div><label>Full Name</label><input id="fName" required placeholder="e.g. Aarav Sharma"></div>
+        <div><label>Class</label><input id="fClass" required placeholder="e.g. 10-A"></div>
+        <button class="btn primary" type="submit">Add Student</button>
+      </form>
+    </div>
+    <div class="card">
+      <h2>All Students</h2>
+      <table>
+        <thead><tr><th>Roll No.</th><th>Class</th><th>Name</th><th></th></tr></thead>
+        <tbody id="studentBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- REPORTS -->
+  <section id="view-reports" class="hidden">
+    <div class="card">
+      <div class="row" style="justify-content:space-between;margin-bottom:14px">
+        <div class="row">
+          <div><label>Class</label><select id="repClass"></select></div>
+          <div><label>From</label><input type="date" id="repFrom"></div>
+          <div><label>To</label><input type="date" id="repTo"></div>
+        </div>
+        <button class="btn" id="exportBtn">Export CSV</button>
+      </div>
+      <table>
+        <thead><tr><th>Roll No.</th><th>Class</th><th>Name</th><th>P / A / L</th><th>Attendance</th></tr></thead>
+        <tbody id="repBody"></tbody>
+      </table>
+      <p class="muted">Students below 75% attendance are flagged in red.</p>
+    </div>
+    <div class="card hidden" id="csvCard">
+      <div class="row" style="justify-content:space-between;margin-bottom:10px">
+        <h2 style="margin:0">CSV Export</h2>
+        <button class="btn small primary" id="copyCsv">Copy to clipboard</button>
+      </div>
+      <textarea id="csvOut" readonly></textarea>
+    </div>
+  </section>
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+const KEY = 'attendance-portal-v1';
+const todayISO = () => new Date().toISOString().slice(0,10);
+
+const seed = {
+  students: [
+    {roll:'101',name:'Aarav Sharma',cls:'10-A'},
+    {roll:'102',name:'Diya Patel',cls:'10-A'},
+    {roll:'103',name:'Rohan Verma',cls:'10-A'},
+    {roll:'104',name:'Ananya Iyer',cls:'10-A'},
+    {roll:'201',name:'Kabir Singh',cls:'10-B'},
+    {roll:'202',name:'Meera Nair',cls:'10-B'},
+    {roll:'203',name:'Arjun Reddy',cls:'10-B'},
+    {roll:'204',name:'Saanvi Gupta',cls:'10-B'}
+  ],
+  records: {} // { 'YYYY-MM-DD': { roll: 'P'|'A'|'L' } }
+};
+
+let db;
+function load(){
+  try { db = JSON.parse(localStorage.getItem(KEY)) || null; } catch(e){ db = null; }
+  if(!db){ db = JSON.parse(JSON.stringify(seed)); }
+}
+function persist(){
+  try { localStorage.setItem(KEY, JSON.stringify(db)); } catch(e){}
+}
+
+const $ = id => document.getElementById(id);
+function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),1800); }
+function esc(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function classes(){ return [...new Set(db.students.map(s=>s.cls))].sort(); }
+function sortStudents(list){ return list.slice().sort((a,b)=>a.cls.localeCompare(b.cls)||a.roll.localeCompare(b.roll,undefined,{numeric:true})); }
+
+function fillClassSelect(sel){
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">All classes</option>' + classes().map(c=>`<option>${esc(c)}</option>`).join('');
+  sel.value = classes().includes(cur) ? cur : '';
+}
+
+// ---- Navigation
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('active',x===b));
+  ['mark','students','reports'].forEach(v=>$('view-'+v).classList.toggle('hidden',v!==b.dataset.view));
+  render();
+});
+
+// ---- Mark attendance
+let draft = {};
+function loadDraft(){ draft = Object.assign({}, db.records[$('date').value] || {}); }
+
+function renderMark(){
+  const cls=$('classFilter').value, q=$('search').value.trim().toLowerCase();
+  const list = sortStudents(db.students).filter(s=>(!cls||s.cls===cls)&&(!q||s.name.toLowerCase().includes(q)||s.roll.toLowerCase().includes(q)));
+  $('markBody').innerHTML = list.length ? list.map(s=>{
+    const st = draft[s.roll];
+    return `<tr><td>${esc(s.roll)}</td><td>${esc(s.cls)}</td><td>${esc(s.name)}</td><td>
+      <div class="seg" data-roll="${esc(s.roll)}">
+        ${['P','A','L'].map(k=>`<button class="${k} ${st===k?'on':''}" data-s="${k}">${{P:'Present',A:'Absent',L:'Late'}[k]}</button>`).join('')}
+      </div></td></tr>`;
+  }).join('') : `<tr><td colspan="4" class="empty">No students found.</td></tr>`;
+  const scoped = db.students.filter(s=>!cls||s.cls===cls);
+  $('sTotal').textContent = scoped.length;
+  ['P','A','L'].forEach(k=>$('s'+k).textContent = scoped.filter(s=>draft[s.roll]===k).length);
+}
+$('markBody').addEventListener('click',e=>{
+  const b=e.target.closest('button[data-s]'); if(!b) return;
+  const roll=b.parentElement.dataset.roll;
+  draft[roll] = draft[roll]===b.dataset.s ? undefined : b.dataset.s;
+  if(!draft[roll]) delete draft[roll];
+  renderMark();
+});
+$('date').onchange=()=>{ loadDraft(); renderMark(); };
+$('classFilter').onchange=renderMark;
+$('search').oninput=renderMark;
+$('allP').onclick=()=>{
+  const cls=$('classFilter').value;
+  db.students.filter(s=>!cls||s.cls===cls).forEach(s=>draft[s.roll]='P');
+  renderMark();
+};
+$('save').onclick=()=>{
+  db.records[$('date').value] = Object.assign({}, draft);
+  persist(); toast('Attendance saved for '+$('date').value);
+};
+
+// ---- Students
+function renderStudents(){
+  const list = sortStudents(db.students);
+  $('studentBody').innerHTML = list.length ? list.map(s=>`<tr><td>${esc(s.roll)}</td><td>${esc(s.cls)}</td><td>${esc(s.name)}</td>
+    <td style="text-align:right"><button class="btn small" data-del="${esc(s.roll)}">Remove</button></td></tr>`).join('')
+    : `<tr><td colspan="4" class="empty">No students yet. Add one above.</td></tr>`;
+}
+$('addForm').addEventListener('submit',e=>{
+  e.preventDefault();
+  const roll=$('fRoll').value.trim(), name=$('fName').value.trim(), cls=$('fClass').value.trim();
+  if(db.students.some(s=>s.roll===roll)){ toast('Roll number '+roll+' already exists'); return; }
+  db.students.push({roll,name,cls}); persist(); e.target.reset(); toast(name+' added'); render();
+});
+$('studentBody').addEventListener('click',e=>{
+  const b=e.target.closest('[data-del]'); if(!b) return;
+  if(b.dataset.confirm!=='1'){ b.dataset.confirm='1'; b.textContent='Confirm?'; b.style.color='var(--bad)'; return; }
+  db.students = db.students.filter(s=>s.roll!==b.dataset.del);
+  Object.values(db.records).forEach(r=>delete r[b.dataset.del]);
+  persist(); toast('Student removed'); render();
+});
+
+// ---- Reports
+function reportRows(){
+  const cls=$('repClass').value, from=$('repFrom').value, to=$('repTo').value;
+  const dates = Object.keys(db.records).filter(d=>(!from||d>=from)&&(!to||d<=to));
+  return sortStudents(db.students).filter(s=>!cls||s.cls===cls).map(s=>{
+    let P=0,A=0,L=0;
+    dates.forEach(d=>{ const v=db.records[d][s.roll]; if(v==='P')P++; else if(v==='A')A++; else if(v==='L')L++; });
+    const total=P+A+L, pct = total ? Math.round((P+L)/total*100) : null;
+    return {...s,P,A,L,pct};
+  });
+}
+function renderReports(){
+  const rows=reportRows();
+  $('repBody').innerHTML = rows.length ? rows.map(r=>{
+    const cls = r.pct===null?'':r.pct>=90?'good':r.pct>=75?'warn':'bad';
+    return `<tr><td>${esc(r.roll)}</td><td>${esc(r.cls)}</td><td>${esc(r.name)}</td><td>${r.P} / ${r.A} / ${r.L}</td>
+      <td>${r.pct===null?'<span class="muted">No records</span>':`<span class="bar"><i style="width:${r.pct}%"></i></span><span class="pill ${cls}">${r.pct}%</span>`}</td></tr>`;
+  }).join('') : `<tr><td colspan="5" class="empty">No students.</td></tr>`;
+}
+['repClass','repFrom','repTo'].forEach(id=>$(id).onchange=renderReports);
+$('exportBtn').onclick=()=>{
+  const rows=reportRows();
+  const csv = ['Roll No,Name,Class,Present,Absent,Late,Attendance %']
+    .concat(rows.map(r=>[r.roll,`"${r.name.replace(/"/g,'""')}"`,r.cls,r.P,r.A,r.L,r.pct??''].join(','))).join('\n');
+  $('csvOut').value=csv; $('csvCard').classList.remove('hidden');
+  try{
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+    a.download='attendance-report.csv'; a.click();
+  }catch(e){}
+};
+$('copyCsv').onclick=async()=>{
+  try{ await navigator.clipboard.writeText($('csvOut').value); toast('Copied to clipboard'); }
+  catch(e){ $('csvOut').select(); toast('Press Ctrl+C to copy'); }
+};
+
+function render(){
+  fillClassSelect($('classFilter')); fillClassSelect($('repClass'));
+  renderMark(); renderStudents(); renderReports();
+}
+
+// ---- Init
+load();
+$('today').textContent = new Date().toLocaleDateString(undefined,{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+$('date').value = todayISO();
+loadDraft();
+render();
+</script>
+</body>
+</html>
